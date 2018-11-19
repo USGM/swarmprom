@@ -4,6 +4,8 @@ networks:
   net:
     driver: overlay
     attachable: true
+  proxy:
+    external: true
 
 volumes:
     prometheus: {}
@@ -91,8 +93,8 @@ services:
     networks:
       - net
     environment:
-      - SLACK_URL=${SLACK_URL:-https://hooks.slack.com/services/TOKEN}
-      - SLACK_CHANNEL=${SLACK_CHANNEL:-general}
+      - SLACK_URL=${SLACK_URL}
+      - SLACK_CHANNEL=${SLACK_CHANNEL:-dev}
       - SLACK_USER=${SLACK_USER:-alertmanager}
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
@@ -181,12 +183,13 @@ services:
   caddy:
     image: stefanprodan/caddy
     ports:
-      - "3000:3000"
-      - "9090:9090"
-      - "9093:9093"
-      - "9094:9094"
+      - "3000"
+      - "9090"
+      - "9093"
+      - "9094"
     networks:
       - net
+      - proxy
     environment:
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
@@ -204,6 +207,13 @@ services:
           memory: 128M
         reservations:
           memory: 64M
+      labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:${TARGET_HOST}
+      - traefik.docker.network=proxy
+      - traefik.port=3000
+      - traefik.default.protocol=http
+          
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 5s
