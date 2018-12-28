@@ -1,5 +1,6 @@
 # swarmprom
 
+
 Swarmprom is a starter kit for Docker Swarm monitoring with [Prometheus](https://prometheus.io/), 
 [Grafana](http://grafana.org/), 
 [cAdvisor](https://github.com/google/cadvisor), 
@@ -7,29 +8,18 @@ Swarmprom is a starter kit for Docker Swarm monitoring with [Prometheus](https:/
 [Alert Manager](https://github.com/prometheus/alertmanager)
 and [Unsee](https://github.com/cloudflare/unsee).
 
-## Install
+## Quick Deploy
 
-Clone this repository and run the monitoring stack:
+* Set `DOCKER_HOST` env. variable to point to the Docker swarm IP.
+* Create an environment file based on the template `dot.env` and run `make`.
 
-```bash
-$ git clone https://github.com/stefanprodan/swarmprom.git
-$ cd swarmprom
-
-ADMIN_USER=admin \
-ADMIN_PASSWORD=admin \
-SLACK_URL=https://hooks.slack.com/services/TOKEN \
-SLACK_CHANNEL=devops-alerts \
-SLACK_USER=alertmanager \
-docker stack deploy -c docker-compose.yml mon
-```
-
-Prerequisites:
+### Prerequisites:
 
 * Docker CE 17.09.0-ce or Docker EE 17.06.2-ee-3
 * Swarm cluster with one manager and a worker node
 * Docker engine experimental enabled and metrics address set to `0.0.0.0:9323`
 
-Services:
+### Services:
 
 * prometheus (metrics database) `http://<swarm-ip>:9090`
 * grafana (visualize metrics) `http://<swarm-ip>:3000`

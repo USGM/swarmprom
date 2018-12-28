@@ -1,9 +1,13 @@
-version: "3.3"
+version: "3.5"
 
 networks:
   net:
     driver: overlay
     attachable: true
+
+  traefik_net:
+     external: true 
+     name: ${TRAEFIK_NET}
 
 volumes:
     prometheus: {}
@@ -26,7 +30,7 @@ services:
     networks:
       - net
     environment:
-      - DOCKER_GWBRIDGE_IP=172.18.0.1
+      - DOCKER_GWBRIDGE_IP=${DOCKER_GWBRIDGE_IP:-172.18.0.1}
     configs:
       - source: dockerd_config
         target: /etc/caddy/Caddyfile
@@ -58,7 +62,8 @@ services:
           memory: 64M
 
   grafana:
-    image: stefanprodan/swarmprom-grafana:5.3.4
+    image: ${DOCKER_REGISTRY}/swarmprom-grafana
+    build: ./grafana
     networks:
       - net
     environment:
@@ -74,6 +79,7 @@ services:
       #- GF_SMTP_PASSWORD=${GF_SMTP_PASSWORD}
     volumes:
       - grafana:/var/lib/grafana
+
     deploy:
       mode: replicated
       replicas: 1
@@ -147,7 +153,8 @@ services:
           memory: 64M
 
   prometheus:
-    image: stefanprodan/swarmprom-prometheus:v2.5.0
+    image: ${DOCKER_REGISTRY}/swarmprom-prometheus
+    build: ./prometheus
     networks:
       - net
     command:
@@ -161,6 +168,8 @@ services:
         target: /etc/prometheus/swarm_node.rules.yml
       - source: task_rules
         target: /etc/prometheus/swarm_task.rules.yml
+    depends_on:
+    - alertmanager
     deploy:
       mode: replicated
       replicas: 1
@@ -182,6 +191,7 @@ services:
       - "9094:9094"
     networks:
       - net
+      - traefik_net
     environment:
       - ADMIN_USER=${ADMIN_USER:-admin}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
@@ -199,6 +209,17 @@ services:
           memory: 128M
         reservations:
           memory: 64M
+      labels:
+      - traefik.default.protocol=http
+      - traefik.docker.network=${TRAEFIK_NET}
+      - traefik.enable=true
+      - traefik.port=3000
+      - traefik.frontend.rule=Host:${MON_HOST}
+      - traefik.frontend.redirect.entryPoint=https
+
+    depends_on:
+       - grafana
+
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 5s
